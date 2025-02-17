@@ -1,0 +1,92 @@
+﻿using System;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Windows.Forms;
+
+namespace PoE2StashMacro
+{
+    internal class MouseAutomation
+    {
+        private Screen screen;
+        public MouseAutomation(Screen screen)
+        {
+            this.screen = screen;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct INPUT
+        {
+            public uint type;
+            public MOUSEINPUT mi;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct MOUSEINPUT
+        {
+            public int dx;
+            public int dy;
+            public uint mouseData;
+            public uint dwFlags;
+            public uint time;
+            public IntPtr dwExtraInfo;
+        }
+
+        private const int INPUT_MOUSE = 0;
+        private const uint MOUSEEVENTF_MOVE = 0x0001;
+        private const uint MOUSEEVENTF_ABSOLUTE = 0x8000;
+        private const uint MOUSEEVENTF_LEFTDOWN = 0x0002;
+        private const uint MOUSEEVENTF_LEFTUP = 0x0004;
+
+        [DllImport("user32.dll")]
+        private static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
+
+        /*
+        public void MouseMove(int x, int y)
+        {
+            INPUT[] inputs = new INPUT[1];
+            inputs[0].type = INPUT_MOUSE;
+            inputs[0].mi.dx = x;
+            inputs[0].mi.dy = y;
+            inputs[0].mi.dwFlags = MOUSEEVENTF_MOVE;
+
+            SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
+        }
+        */
+
+        public void MouseMove(int x, int y)
+        {
+            // Get the screen dimensions
+            int screenWidth = screen.Bounds.Width;
+            int screenHeight = screen.Bounds.Height;
+
+            // Normalize the coordinates
+            int normalizedX = (x * 65536) / screenWidth;
+            int normalizedY = (y * 65536) / screenHeight;
+
+            INPUT[] inputs = new INPUT[1];
+            inputs[0].type = INPUT_MOUSE;
+            inputs[0].mi.dx = normalizedX;
+            inputs[0].mi.dy = normalizedY;
+            inputs[0].mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
+
+            SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
+        }
+
+        public void MouseLeftClick()
+        {
+            INPUT[] inputs = new INPUT[1];
+            inputs[0].type = INPUT_MOUSE;
+            inputs[0].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+
+            SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
+
+            inputs[0].mi.dwFlags = MOUSEEVENTF_LEFTUP;
+            SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
+        }
+
+        public void Sleep(int milliseconds)
+        {
+            System.Threading.Thread.Sleep(milliseconds);
+        }
+    }
+}

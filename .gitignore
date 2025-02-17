@@ -1,0 +1,58 @@
+# Visual Studio
+.vs/
+*.sln
+*.suo
+*.user
+*.hpp
+*.userprefs
+*.vcxproj
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Oo]bj/
+[Bb]in/
+[Ll]ogs/
+
+# Visual Studio Code
+.vscode/
+
+# Rider
+.idea/
+
+# NuGet Packages
+*.nupkg
+**/packages/*
+!**/packages/build/*.ps1
+!**/packages/build/**/*.ps1
+
+# Visual Studio 2022
+*.vs
+.vs/
+
+# Backup files
+*.bak
+
+# Others
+*.pdb
+*.cache
+*.ilk
+*.log
+*.tmproj
+*.mdf
+*.ldf
+*.sdf
+*.dbmdl
+*.dbproj
+*.djou
+*.userprefs
+
+# Directory for visual Studio Test Results
+TestResults/
+
+# Azure Functions
+bin/
+obj/
+local.settings.json
