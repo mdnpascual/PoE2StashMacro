@@ -1,6 +1,5 @@
 # Visual Studio
 .vs/
-*.sln
 *.suo
 *.user
 *.hpp
