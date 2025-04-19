@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
+using Point = System.Drawing.Point;
 
 namespace PoE2StashMacro
 {
-    internal class MouseAutomation
+    public class MouseAutomation
     {
         private Screen screen;
         public MouseAutomation(Screen screen)
@@ -39,6 +41,11 @@ namespace PoE2StashMacro
 
         [DllImport("user32.dll")]
         private static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
+        [DllImport("user32.dll")]
+        private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+        private const uint KEYEVENTF_KEYUP = 0x0002;
+
+        protected bool isProgrammaticKeyPress = false;
 
         /*
         public void MouseMove(int x, int y)
@@ -87,6 +94,33 @@ namespace PoE2StashMacro
         public void Sleep(int milliseconds)
         {
             System.Threading.Thread.Sleep(milliseconds);
+        }
+
+        public async Task MoveMouseAndPressKeyAsync(Point oppositeCursorPos, Point origPos, Keys key)
+        {
+            // Move mouse to the opposite position
+            MouseMove(oppositeCursorPos.X, oppositeCursorPos.Y);
+
+            isProgrammaticKeyPress = true;
+            await Task.Delay(20);
+
+            // Press the specified key down
+            keybd_event((byte)key, 0, 0, UIntPtr.Zero);
+
+            await Task.Delay(10);
+
+            // Release the key
+            keybd_event((byte)key, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+
+            await Task.Delay(50);
+            isProgrammaticKeyPress = false;
+
+            MouseMove(origPos.X, origPos.Y);
+        }
+
+        public bool IsProgrammaticKeyPress()
+        {
+            return isProgrammaticKeyPress;
         }
     }
 }

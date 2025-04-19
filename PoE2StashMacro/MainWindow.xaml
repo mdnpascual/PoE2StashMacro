@@ -12,9 +12,12 @@
         <Label x:Name="MousePosLbl" Content="Mouse Position: X=0, Y=0" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,81,0,0"/>
 
         <Label Content="Monitor to track:" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="64,0,0,120"/>
-        <ComboBox x:Name="MonitorComboBox" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="200" Margin="177,0,0,122"/>
+        <ComboBox x:Name="MonitorComboBox" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="200" Margin="177,0,0,122" SelectionChanged="MonitorComboBox_SelectionChanged"/>
 
-        <CheckBox x:Name="IsQuadCheckBox" Content="Is Quadtab" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="140,69,0,0"/>
-        <CheckBox x:Name="IsMapTab" Content="Is Maptab" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="223,69,0,0"/>
+        <StackPanel Height="300" Margin="-10,0,0,0" Orientation="Horizontal">
+            <CheckBox x:Name="IsQuadCheckBox" Content="Quadtab" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="114,69,0,0" Checked="CheckBox_Checked"/>
+            <CheckBox x:Name="IsMapTab" Content="Maptab" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="10,69,0,0" Checked="CheckBox_Checked"/>
+            <CheckBox x:Name="DisengageSkill" Content="Disengage" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,69,0,0" Checked="CheckBox_Checked"/>
+        </StackPanel>
     </Grid>
 </Window>

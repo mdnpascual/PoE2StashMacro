@@ -12,6 +12,10 @@ using System.Linq;
 using MessageBox = System.Windows.MessageBox;
 using Point = System.Drawing.Point;
 using System.Threading;
+using System.Windows.Controls;
+using CheckBox = System.Windows.Controls.CheckBox;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using Window = System.Windows.Window;
 
 namespace PoE2StashMacro
 {
@@ -25,7 +29,11 @@ namespace PoE2StashMacro
 
         private StashPusher stashPusher;
         private Thread stashPusherThread;
-        private CancellationTokenSource cancellationTokenSource;
+        private CancellationTokenSource stashPusherCancellationToken;
+
+        private DisengageReverse disengageReverse;
+        private Thread disengageReverseThread;
+        private CancellationTokenSource disengageReverseCancellationToken;
 
         private bool isListening = false;
         private KeyboardHook keyboardHook;
@@ -33,11 +41,11 @@ namespace PoE2StashMacro
         private DispatcherTimer timer;
         private Brush originalBackground;
 
+        private MouseAutomation mouseAutomation;
+
         public MainWindow()
         {
             InitializeComponent();
-            keyboardHook = new KeyboardHook();
-            keyboardHook.KeyUp += KeyboardHook_KeyUp;
 
             // Initialize settings
             appSettings = new AppSettings();
@@ -59,6 +67,10 @@ namespace PoE2StashMacro
                 MonitorComboBox.SelectedIndex = appSettings.SelectedMonitorIndex >= 0 ? appSettings.SelectedMonitorIndex : 0;
             }
 
+            mouseAutomation = new MouseAutomation(screens[MonitorComboBox.SelectedIndex]);
+            keyboardHook = new KeyboardHook(mouseAutomation);
+            keyboardHook.KeyUp += KeyboardHook_KeyUp;
+
             // Set the checkbox state
             IsQuadCheckBox.IsChecked = appSettings.IsQuad;
 
@@ -71,9 +83,8 @@ namespace PoE2StashMacro
 
         private void StartStashPusher(string resolution, bool isQuad, bool isMapTab, Point cursorPos)
         {
-            MouseAutomation mouseAutomation = new MouseAutomation(screens[MonitorComboBox.SelectedIndex]);
-            cancellationTokenSource = new CancellationTokenSource();
-            stashPusher = new StashPusher(resolution, isQuad, isMapTab, mouseAutomation, cancellationTokenSource.Token, screens[MonitorComboBox.SelectedIndex]);
+            stashPusherCancellationToken = new CancellationTokenSource();
+            stashPusher = new StashPusher(resolution, isQuad, isMapTab, mouseAutomation, stashPusherCancellationToken.Token, screens[MonitorComboBox.SelectedIndex]);
 
             stashPusherThread = new Thread(() =>
             {
@@ -81,6 +92,19 @@ namespace PoE2StashMacro
             });
 
             stashPusherThread.Start();
+        }
+
+        private void StartDisengageReverse(string resolution, Point cursorPos)
+        {
+            disengageReverseCancellationToken = new CancellationTokenSource();
+            disengageReverse = new DisengageReverse(resolution, mouseAutomation, disengageReverseCancellationToken.Token, screens[MonitorComboBox.SelectedIndex]);
+
+            disengageReverseThread = new Thread(() =>
+            {
+                disengageReverse.Process(cursorPos, MousePosLbl);
+            });
+
+            disengageReverseThread.Start();
         }
 
         private bool MonitorNamesMatch()
@@ -118,16 +142,37 @@ namespace PoE2StashMacro
             if (isListening)
             {
                 keyboardHook.HookKeyboard(); // Start listening to global keyboard events
+                keyboardHook.AddKeyToSuppress(Keys.E);
             }
             else
             {
+                keyboardHook.RemoveKeyToSuppress(Keys.E);
                 keyboardHook.UnhookKeyboard(); // Stop listening to global keyboard events
+            }
+        }
+
+        private void CheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            // Get the checkbox that triggered the event
+            CheckBox checkedCheckBox = sender as CheckBox;
+
+            // If a checkbox is checked, uncheck all others
+            if (checkedCheckBox != null && checkedCheckBox.IsChecked == true)
+            {
+                // Uncheck all other checkboxes
+                foreach (var child in ((StackPanel)checkedCheckBox.Parent).Children)
+                {
+                    if (child is CheckBox checkBox && checkBox != checkedCheckBox)
+                    {
+                        checkBox.IsChecked = false;
+                    }
+                }
             }
         }
 
         private void KeyboardHook_KeyUp(Keys key)
         {
-            if (key == Keys.E)
+            if (key == Keys.E && !mouseAutomation.IsProgrammaticKeyPress())
             {
                 if (MonitorComboBox.SelectedItem != null)
                 {
@@ -142,27 +187,43 @@ namespace PoE2StashMacro
 
                     CheckMousePositionInMonitor(new Point(absoluteX, absoluteY), screens[selectedIndex]);
 
-                    // Create StashPusher instance
-                    StartStashPusher(
-                        screens[selectedIndex].Bounds.Width + "x" + screens[selectedIndex].Bounds.Height,
-                        IsQuadCheckBox.IsChecked ?? false,
-                        IsMapTab.IsChecked ?? false,
-                        new Point(relativeX, relativeY));
+                    if (DisengageSkill.IsChecked == true)
+                    {
+                        StartDisengageReverse(
+                            screens[selectedIndex].Bounds.Width + "x" + screens[selectedIndex].Bounds.Height,
+                            new Point(relativeX, relativeY)
+                        );
+                    } else
+                    {
+                        // Create StashPusher instance
+                        StartStashPusher(
+                            screens[selectedIndex].Bounds.Width + "x" + screens[selectedIndex].Bounds.Height,
+                            IsQuadCheckBox.IsChecked ?? false,
+                            IsMapTab.IsChecked ?? false,
+                            new Point(relativeX, relativeY));
+                    }
                 }   
             }
             else if (key == Keys.X)
             {
                 if (stashPusherThread != null && stashPusherThread.IsAlive)
                 {
-                    cancellationTokenSource.Cancel();
+                    stashPusherCancellationToken.Cancel();
+                }
+                if (disengageReverseThread != null && disengageReverseThread.IsAlive)
+                {
+                    disengageReverseCancellationToken.Cancel();
                 }
             }
-            else if (key == Keys.Q)
+            else if (key == Keys.Q && DisengageSkill.IsChecked != true)
             {
-                IsQuadCheckBox.IsChecked = !IsQuadCheckBox.IsChecked;
-                IsMapTab.IsChecked = false;
+                if (DisengageSkill.IsChecked == true)
+                {
+                    IsQuadCheckBox.IsChecked = !IsQuadCheckBox.IsChecked;
+                    IsMapTab.IsChecked = false;
+                }
             }
-            else if (key == Keys.M)
+            else if (key == Keys.M && DisengageSkill.IsChecked != true)
             {
                 IsQuadCheckBox.IsChecked = false;
                 IsMapTab.IsChecked = !IsMapTab.IsChecked;
@@ -197,8 +258,20 @@ namespace PoE2StashMacro
             appSettings.SaveSettings();
 
             keyboardHook.UnhookKeyboard();
-            if (stashPusherThread != null && stashPusherThread.IsAlive) { cancellationTokenSource.Cancel(); }
+            if (stashPusherThread != null && stashPusherThread.IsAlive) { stashPusherCancellationToken.Cancel(); }
             base.OnClosing(e);
+        }
+
+        private void MonitorComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // Get the selected item
+            var selectedItem = MonitorComboBox.SelectedIndex;
+
+            // Perform an action based on the selected item
+            if (selectedItem > -1)
+            {
+                mouseAutomation = new MouseAutomation(screens[selectedItem]);
+            }
         }
     }
 }

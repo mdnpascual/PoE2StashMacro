@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using PoE2StashMacro;
 
 public class KeyboardHook
 {
@@ -11,8 +13,12 @@ public class KeyboardHook
     public event Action<Keys> KeyUp;
     public event Action<Keys> KeyDown;
 
-    public KeyboardHook()
+    private MouseAutomation mouseAutomation;
+    private HashSet<Keys> _keysToSuppress = new HashSet<Keys>();
+
+    public KeyboardHook(MouseAutomation mouseAutomation)
     {
+        this.mouseAutomation = mouseAutomation;
         _proc = HookCallback;
     }
 
@@ -24,6 +30,15 @@ public class KeyboardHook
     public void UnhookKeyboard()
     {
         UnhookWindowsHookEx(_hookID);
+    }
+
+    public void AddKeyToSuppress(Keys key)
+    {
+        _keysToSuppress.Add(key);
+    }
+    public void RemoveKeyToSuppress(Keys key)
+    {
+        _keysToSuppress.Remove(key);
     }
 
     private IntPtr SetHook(LowLevelKeyboardProc proc)
@@ -40,13 +55,20 @@ public class KeyboardHook
         if (nCode >= 0)
         {
             int vkCode = Marshal.ReadInt32(lParam);
+            Keys key = (Keys)vkCode;
+
             if (wParam == (IntPtr)WM_KEYDOWN)
             {
-                KeyDown?.Invoke((Keys)vkCode);
+                KeyDown?.Invoke(key);
+                // Suppress the key if it's in the suppression list
+                if (_keysToSuppress.Contains(key) && !mouseAutomation.IsProgrammaticKeyPress())
+                {
+                    return 1; // Suppress the key event
+                }
             }
             else if (wParam == (IntPtr)WM_KEYUP)
             {
-                KeyUp?.Invoke((Keys)vkCode);
+                KeyUp?.Invoke(key);
             }
         }
         return CallNextHookEx(_hookID, nCode, wParam, lParam);
