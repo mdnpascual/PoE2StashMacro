@@ -30,11 +30,11 @@ namespace PoE2StashMacro
         {
             Point oppositeCursorPos = GetOppositeCursorPosition(cursorPos, centerPoint);
 
+            mouseAutomation.MoveMouseAndPressKeyAsync(oppositeCursorPos, cursorPos, Keys.E);
+
             Application.Current.Dispatcher.Invoke(() => {
                 label.Content = $"X: {cursorPos.X} Y: {cursorPos.Y}\nOpposite X: {oppositeCursorPos.X} Y: {oppositeCursorPos.Y}";
             });
-
-            mouseAutomation.MoveMouseAndPressKeyAsync(oppositeCursorPos, cursorPos, Keys.E);
         }
 
         private Point GetOppositeCursorPosition(Point cursorPos, Point centerPoint)
