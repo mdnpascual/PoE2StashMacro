@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PoE2StashMacro"
         mc:Ignorable="d"
-        Title="MainWindow" Height="331" Width="431">
+        Title="PoE2Macro" Height="331" Width="431">
     <Grid>
         <Button x:Name="StartBtn" Content="Start Listening" Width="150" Height="50" Click="StartBtn_Click" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,0"/>
 

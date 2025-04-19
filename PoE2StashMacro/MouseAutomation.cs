@@ -105,31 +105,45 @@ namespace PoE2StashMacro
                 while (running)
                 {
                     MouseMove(oppositeCursorPos.X, oppositeCursorPos.Y);
-                    await Task.Delay(3); // Adjust the delay as needed
+                    await Task.Delay(2);
                 }
             });
 
             // Allow some time for the mouse to move
-            await Task.Delay(20);
+            await Task.Delay(16);
 
             // Press the specified key down
             isProgrammaticKeyPress = true;
             keybd_event((byte)key, 0, 0, UIntPtr.Zero);
 
-            await Task.Delay(10);
+            await Task.Delay(16);
 
             // Release the key
             keybd_event((byte)key, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
 
             await Task.Delay(50);
-            isProgrammaticKeyPress = false;
 
             // Stop the mouse movement task
             running = false;
-            moveTask.Wait(); // Wait for the task to finish (or cancel it if needed)
+            moveTask.Wait();
 
             // Move the mouse back to the original position
-            MouseMove(origPos.X, origPos.Y);
+            bool running2 = true;
+            var moveTask2 = Task.Run(async () =>
+            {
+                while (running2)
+                {
+                    MouseMove(origPos.X, origPos.Y);
+                    await Task.Delay(2);
+                }
+            });
+
+            await Task.Delay(20);
+
+            running2 = false;
+            moveTask2.Wait();
+
+            isProgrammaticKeyPress = false;
         }
 
         public bool IsProgrammaticKeyPress()

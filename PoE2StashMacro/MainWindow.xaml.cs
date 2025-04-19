@@ -43,6 +43,8 @@ namespace PoE2StashMacro
 
         private MouseAutomation mouseAutomation;
 
+        private Keys disengageKey = Keys.E;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -97,7 +99,7 @@ namespace PoE2StashMacro
         private void StartDisengageReverse(string resolution, Point cursorPos)
         {
             disengageReverseCancellationToken = new CancellationTokenSource();
-            disengageReverse = new DisengageReverse(resolution, mouseAutomation, disengageReverseCancellationToken.Token, screens[MonitorComboBox.SelectedIndex]);
+            disengageReverse = new DisengageReverse(resolution, mouseAutomation, disengageReverseCancellationToken.Token, screens[MonitorComboBox.SelectedIndex], disengageKey);
 
             disengageReverseThread = new Thread(() =>
             {
@@ -142,11 +144,11 @@ namespace PoE2StashMacro
             if (isListening)
             {
                 keyboardHook.HookKeyboard(); // Start listening to global keyboard events
-                keyboardHook.AddKeyToSuppress(Keys.E);
+                keyboardHook.AddKeyToSuppress(disengageKey);
             }
             else
             {
-                keyboardHook.RemoveKeyToSuppress(Keys.E);
+                keyboardHook.RemoveKeyToSuppress(disengageKey);
                 keyboardHook.UnhookKeyboard(); // Stop listening to global keyboard events
             }
         }
@@ -172,7 +174,26 @@ namespace PoE2StashMacro
 
         private void KeyboardHook_KeyUp(Keys key)
         {
-            if (key == Keys.E && !mouseAutomation.IsProgrammaticKeyPress())
+            if (key == disengageKey && !mouseAutomation.IsProgrammaticKeyPress())
+            {
+                int selectedIndex = MonitorComboBox.SelectedIndex;
+
+                // Get mouse positions
+                var (absoluteX, absoluteY, relativeX, relativeY) = mousePositionHandler.GetMousePositions(selectedIndex);
+
+                // Update the label with absolute and relative positions
+                MousePosLbl.Content = $"Mouse Position (Absolute): X={absoluteX}, Y={absoluteY}\n" +
+                                      $"Mouse Position (Relative to Screen {selectedIndex + 1}): X={relativeX}, Y={relativeY}";
+
+                CheckMousePositionInMonitor(new Point(absoluteX, absoluteY), screens[selectedIndex]);
+
+                // Create DisengageReverse instance
+                StartDisengageReverse(
+                    screens[selectedIndex].Bounds.Width + "x" + screens[selectedIndex].Bounds.Height,
+                    new Point(relativeX, relativeY)
+                );
+            }
+            if (key == Keys.E && DisengageSkill.IsChecked != true)
             {
                 if (MonitorComboBox.SelectedItem != null)
                 {
@@ -187,21 +208,12 @@ namespace PoE2StashMacro
 
                     CheckMousePositionInMonitor(new Point(absoluteX, absoluteY), screens[selectedIndex]);
 
-                    if (DisengageSkill.IsChecked == true)
-                    {
-                        StartDisengageReverse(
-                            screens[selectedIndex].Bounds.Width + "x" + screens[selectedIndex].Bounds.Height,
-                            new Point(relativeX, relativeY)
-                        );
-                    } else
-                    {
-                        // Create StashPusher instance
-                        StartStashPusher(
-                            screens[selectedIndex].Bounds.Width + "x" + screens[selectedIndex].Bounds.Height,
-                            IsQuadCheckBox.IsChecked ?? false,
-                            IsMapTab.IsChecked ?? false,
-                            new Point(relativeX, relativeY));
-                    }
+                    // Create StashPusher instance
+                    StartStashPusher(
+                        screens[selectedIndex].Bounds.Width + "x" + screens[selectedIndex].Bounds.Height,
+                        IsQuadCheckBox.IsChecked ?? false,
+                        IsMapTab.IsChecked ?? false,
+                        new Point(relativeX, relativeY));
                 }   
             }
             else if (key == Keys.X)
@@ -215,7 +227,7 @@ namespace PoE2StashMacro
                     disengageReverseCancellationToken.Cancel();
                 }
             }
-            else if (key == Keys.Q && DisengageSkill.IsChecked != true)
+            else if (key == Keys.Q && DisengageSkill.IsChecked != true && !mouseAutomation.IsProgrammaticKeyPress())
             {
                 if (DisengageSkill.IsChecked == true)
                 {
@@ -223,7 +235,7 @@ namespace PoE2StashMacro
                     IsMapTab.IsChecked = false;
                 }
             }
-            else if (key == Keys.M && DisengageSkill.IsChecked != true)
+            else if (key == Keys.M && DisengageSkill.IsChecked != true && !mouseAutomation.IsProgrammaticKeyPress())
             {
                 IsQuadCheckBox.IsChecked = false;
                 IsMapTab.IsChecked = !IsMapTab.IsChecked;

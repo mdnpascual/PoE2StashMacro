@@ -16,21 +16,28 @@ namespace PoE2StashMacro
         private CancellationToken cancellationToken;
         private Screen screen;
         private string resolution { get; set; }
-        private Point centerPoint = new Point(1950, 975);        
+        private Point centerPoint = new Point(1950, 975);
+        private Keys disengageKey;
 
-        public DisengageReverse(string resolution, MouseAutomation mouseAutomation, CancellationToken cancellationToken, Screen screen)
+        public DisengageReverse(string resolution, MouseAutomation mouseAutomation, CancellationToken cancellationToken, Screen screen, Keys disengageKey)
         {
             this.resolution = resolution;
             this.screen = screen;
             this.mouseAutomation = mouseAutomation;
             this.cancellationToken = cancellationToken;
+            this.disengageKey = disengageKey;
+
+            int screenWidth = screen.Bounds.Width;
+            int screenHeight = screen.Bounds.Height;
+
+            centerPoint = new Point((int)Math.Round(screenWidth * 0.5078), (int)Math.Round(screenHeight * 0.4514));
         }
 
         public void Process(Point cursorPos, System.Windows.Controls.Label label)
         {
             Point oppositeCursorPos = GetOppositeCursorPosition(cursorPos, centerPoint);
 
-            mouseAutomation.MoveMouseAndPressKeyAsync(oppositeCursorPos, cursorPos, Keys.E);
+            mouseAutomation.MoveMouseAndPressKeyAsync(oppositeCursorPos, cursorPos, this.disengageKey);
 
             Application.Current.Dispatcher.Invoke(() => {
                 label.Content = $"X: {cursorPos.X} Y: {cursorPos.Y}\nOpposite X: {oppositeCursorPos.X} Y: {oppositeCursorPos.Y}";
