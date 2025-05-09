@@ -96,6 +96,45 @@ namespace PoE2StashMacro
             System.Threading.Thread.Sleep(milliseconds);
         }
 
+        public async Task PressKeyAsync(Keys key, Keys modifier, Keys modifier2)
+        {
+            isProgrammaticKeyPress = true;
+            if (modifier != Keys.None)
+            {
+                keybd_event((byte)modifier, 0, 0, UIntPtr.Zero);
+                await Task.Delay(16);
+            }
+
+            if (modifier2 != Keys.None)
+            {
+                keybd_event((byte)modifier2, 0, 0, UIntPtr.Zero);
+                await Task.Delay(16);
+            }
+
+            // Main key down
+            keybd_event((byte)key, 0, 0, UIntPtr.Zero);
+            await Task.Delay(50);
+
+            // Main key up
+            keybd_event((byte)key, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            await Task.Delay(16);
+
+            if (modifier != Keys.None)
+            {
+                keybd_event((byte)modifier, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+                await Task.Delay(16);
+            }
+
+            if (modifier2 != Keys.None)
+            {
+                keybd_event((byte)modifier2, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+                await Task.Delay(16);
+            }
+
+            await Task.Delay(16);
+            isProgrammaticKeyPress = false;
+        }
+
         public async Task MoveMouseAndPressKeyAsync(Point oppositeCursorPos, Point origPos, Keys key)
         {
             bool running = true;
@@ -109,16 +148,13 @@ namespace PoE2StashMacro
                 }
             });
 
-            // Allow some time for the mouse to move
             await Task.Delay(16);
 
-            // Press the specified key down
             isProgrammaticKeyPress = true;
             keybd_event((byte)key, 0, 0, UIntPtr.Zero);
 
             await Task.Delay(16);
 
-            // Release the key
             keybd_event((byte)key, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
 
             await Task.Delay(50);
@@ -146,6 +182,7 @@ namespace PoE2StashMacro
             isProgrammaticKeyPress = false;
         }
 
+        // Considered as a Lock so no keys can't be pressed
         public bool IsProgrammaticKeyPress()
         {
             return isProgrammaticKeyPress;

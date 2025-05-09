@@ -1,0 +1,15 @@
+﻿<Window x:Class="PoE2StashMacro.OverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Overlay" 
+        AllowsTransparency="True"
+        Background="Transparent" 
+        WindowStyle="None" 
+        Topmost="True"
+        IsHitTestVisible="False"
+        MinWidth="100" MinHeight="50"
+        MouseDown="OverlayWindow_MouseDown">
+    <Border Background="#B3000000" CornerRadius="5" Padding="10">
+        <TextBlock x:Name="OverlayText" Foreground="Yellow" FontSize="24" TextWrapping="Wrap"/>
+    </Border>
+</Window>

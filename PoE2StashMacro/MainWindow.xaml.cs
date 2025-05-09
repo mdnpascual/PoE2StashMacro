@@ -35,6 +35,10 @@ namespace PoE2StashMacro
         private Thread disengageReverseThread;
         private CancellationTokenSource disengageReverseCancellationToken;
 
+        private ItemAffixAlarm itemAffixAlarm;
+        private Thread itemAffixAlarmThread;
+        private CancellationTokenSource itemAffixAlarmCancellationToken;
+
         private bool isListening = false;
         private KeyboardHook keyboardHook;
         private List<Screen> screens;
@@ -42,6 +46,7 @@ namespace PoE2StashMacro
         private Brush originalBackground;
 
         private MouseAutomation mouseAutomation;
+        private OverlayWindow overlayWindow;
 
         private Keys disengageKey = Keys.E;
 
@@ -49,6 +54,7 @@ namespace PoE2StashMacro
         {
             InitializeComponent();
 
+            overlayWindow = new OverlayWindow();
             // Initialize settings
             appSettings = new AppSettings();
             appSettings.LoadSettings();
@@ -107,6 +113,25 @@ namespace PoE2StashMacro
             });
 
             disengageReverseThread.Start();
+        }
+
+        private void StartItemAffixAlarm()
+        {
+            if (itemAffixAlarmCancellationToken != null)
+            {
+                itemAffixAlarmCancellationToken.Cancel();
+                itemAffixAlarmThread?.Join(); // Wait for the thread to finish
+            }
+
+            itemAffixAlarmCancellationToken = new CancellationTokenSource();
+            itemAffixAlarm = new ItemAffixAlarm(overlayWindow, mouseAutomation, itemAffixAlarmCancellationToken.Token);
+
+            itemAffixAlarmThread = new Thread(() =>
+            {
+                itemAffixAlarm.Process(MousePosLbl);
+            });
+
+            itemAffixAlarmThread.Start();
         }
 
         private bool MonitorNamesMatch()
@@ -216,6 +241,10 @@ namespace PoE2StashMacro
                         new Point(relativeX, relativeY));
                 }   
             }
+            if (key == Keys.C && AffixScanner.IsChecked == true && !mouseAutomation.IsProgrammaticKeyPress())
+            {
+                StartItemAffixAlarm();
+            }
             else if (key == Keys.X)
             {
                 if (stashPusherThread != null && stashPusherThread.IsAlive)
@@ -225,6 +254,10 @@ namespace PoE2StashMacro
                 if (disengageReverseThread != null && disengageReverseThread.IsAlive)
                 {
                     disengageReverseCancellationToken.Cancel();
+                }
+                if (itemAffixAlarmThread != null && itemAffixAlarmThread.IsAlive)
+                {
+                    itemAffixAlarmCancellationToken.Cancel();
                 }
             }
             else if (key == Keys.Q && DisengageSkill.IsChecked != true && !mouseAutomation.IsProgrammaticKeyPress())
@@ -268,6 +301,9 @@ namespace PoE2StashMacro
             appSettings.SelectedMonitorIndex = MonitorComboBox.SelectedIndex;
             appSettings.IsQuad = IsQuadCheckBox.IsChecked ?? false; // Save checkbox state
             appSettings.SaveSettings();
+
+            overlayWindow.HideOverlay();
+            overlayWindow.Close();
 
             keyboardHook.UnhookKeyboard();
             if (stashPusherThread != null && stashPusherThread.IsAlive) { stashPusherCancellationToken.Cancel(); }

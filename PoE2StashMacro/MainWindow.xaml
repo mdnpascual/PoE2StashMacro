@@ -15,9 +15,10 @@
         <ComboBox x:Name="MonitorComboBox" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="200" Margin="177,0,0,122" SelectionChanged="MonitorComboBox_SelectionChanged"/>
 
         <StackPanel Height="300" Margin="-10,0,0,0" Orientation="Horizontal">
-            <CheckBox x:Name="IsQuadCheckBox" Content="Quadtab" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="114,69,0,0" Checked="CheckBox_Checked"/>
-            <CheckBox x:Name="IsMapTab" Content="Maptab" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="10,69,0,0" Checked="CheckBox_Checked"/>
-            <CheckBox x:Name="DisengageSkill" Content="Disengage" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,69,0,0" Checked="CheckBox_Checked"/>
+            <CheckBox x:Name="IsQuadCheckBox" Content="Quadtab (E)" VerticalAlignment="Top" Margin="44,69,0,0" Checked="CheckBox_Checked"/>
+            <CheckBox x:Name="IsMapTab" Content="Maptab (E)" VerticalAlignment="Top" Margin="10,69,0,0" Checked="CheckBox_Checked"/>
+            <CheckBox x:Name="DisengageSkill" Content="Disengage (E)" VerticalAlignment="Top" Margin="10,69,0,0" Checked="CheckBox_Checked"/>
+            <CheckBox x:Name="AffixScanner" Content="Affix Tier (C)" VerticalAlignment="Top" Margin="10,69,0,0" Checked="CheckBox_Checked"/>
         </StackPanel>
     </Grid>
 </Window>
