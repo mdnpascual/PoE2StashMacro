@@ -157,7 +157,7 @@ namespace PoE2StashMacro
 
             keybd_event((byte)key, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
 
-            await Task.Delay(50);
+            await Task.Delay(66);
 
             // Stop the mouse movement task
             running = false;

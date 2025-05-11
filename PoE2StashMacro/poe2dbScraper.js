@@ -3,8 +3,11 @@ function scrapeData() {
     // Initialize the result object
     const result = {
         type: "",
+        name: "",
+        baseType: "",
         stat: [],
-        implicitStatsToMatch: ["IGNORE_FOR_NOW"],
+        implicitStatsToMatch: [],
+        augmentedStatsToMatch: [],
         enabled: true
     };
 
@@ -12,6 +15,7 @@ function scrapeData() {
     const typeElement = document.evaluate('//*[@id="canvas"]/h5/a', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
     if (typeElement) {
         result.type = typeElement.innerText.trim();
+        result.name = result.type + " (first)";
     }
 
     // Get all divs that start with "collapseOnenormal"
@@ -27,10 +31,40 @@ function scrapeData() {
 
             // Collect name and tier
             rows.forEach((row, index) => {
-                const name = row.querySelector('td').textContent.trim();
+                const tdRows = row.querySelectorAll('td');
+                const name = tdRows[0].textContent.trim();
+
+                const descriptionRaw = tdRows[2];
+                const spans = descriptionRaw.querySelectorAll('span');
+                let targetIndex = -1;
+                for (let i = 0; i < spans.length; i++) {
+                    if (spans[i].classList.contains('d-none') &&
+                        spans[i].classList.contains('badge') &&
+                        spans[i].classList.contains('rounded-pill') &&
+                        spans[i].classList.contains('bg-secondary')) {
+                        targetIndex = i;
+                        break;
+                    }
+                }
+                for (let i = 0; i < Math.min(targetIndex + 1, spans.length); i++) { // remove first 2 OR min length
+                    spans[i].remove();
+                }
+                for (let i = 0; i < spans.length; i++) {
+                    if (spans[i].classList.contains('mod-value')) {
+                        // Modify the textContent to prepend a newline character
+                        spans[i].textContent = "\n" + spans[i].textContent;
+
+                        // Clean up the text by removing "\n" before "("
+                        spans[i].textContent = spans[i].textContent.replace(/\n\(/g, "(");
+                    }
+                }
+
+                const description = descriptionRaw.textContent.trim();
+
                 // Push the stat object to the interim result
                 interimResult.push({
                     name: name,
+                    description: description,
                     tier: index + 1,
                     rank: index + 1
                 });

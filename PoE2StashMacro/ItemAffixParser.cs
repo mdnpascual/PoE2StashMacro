@@ -15,11 +15,20 @@ namespace PoE2StashMacro
             [JsonProperty("type")]
             public string Type { get; set; }
 
+            [JsonProperty("name")]
+            public string Name { get; set; }
+
+            [JsonProperty("baseType")]
+            public string? BaseType { get; set; }
+
             [JsonProperty("stat")]
             public List<Stat> Stats { get; set; }
 
             [JsonProperty("implicitStatsToMatch")]
-            public List<string> ImplicitStatsToMatch { get; set; }
+            public List<string>? ImplicitStatsToMatch { get; set; }
+
+            [JsonProperty("augmentedStatsToMatch")]
+            public List<string>? AugmentedStatsToMatch { get; set; }
 
             [JsonProperty("enabled")]
             public bool Enabled { get; set; }
@@ -29,6 +38,9 @@ namespace PoE2StashMacro
         {
             [JsonProperty("name")]
             public string Name { get; set; }
+
+            [JsonProperty("description")]
+            public string Description { get; set; }
 
             [JsonProperty("rank")]
             public int Rank { get; set; }
@@ -62,7 +74,10 @@ namespace PoE2StashMacro
                         .Select(item => new Item
                         {
                             Type = item.Type,
+                            Name = item.Name,
+                            BaseType = item.BaseType,
                             ImplicitStatsToMatch = item.ImplicitStatsToMatch,
+                            AugmentedStatsToMatch = item.AugmentedStatsToMatch,
                             Enabled = item.Enabled,
                             Stats = item.Stats.Where(stat => stat.Enabled).ToList() // Keep only enabled stats
                         })
@@ -79,60 +94,97 @@ namespace PoE2StashMacro
 
         public List<string> ParseString(string str)
         {
+            if (str == "") return new List<string>();
+
             // Initialize variables
-            string itemType = string.Empty;
             List<string> matchedStrings = new List<string>();
             bool inStatsSection = false;
 
             // Split the input string into lines
             string[] lines = str.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
-            int lastSeparatorLineIndex = lines
+            // Remove fractured Line
+            if (lines.Contains("Fractured Item\r"))
+            {
+                // Create a new array excluding the last two entries
+                lines = lines.Take(lines.Length - 2).ToArray();
+            }
+
+            List<int> separatorLineIndex = lines
                 .Select((line, index) => new { line, index })
                 .Where(x => x.line == "--------\r")
                 .Select(x => x.index)
-                .ToList()
-                .LastOrDefault();
+                .ToList();
 
-            // Iterate over the lines to find the item type and the stats section
-            for (int i = 0; i < lines.Length; i++)
+            int firstSeparatorLineIndex = separatorLineIndex.FirstOrDefault();
+            int lastSeparatorLineIndex = separatorLineIndex.LastOrDefault();
+
+            string? itemType = lines
+                .FirstOrDefault(line => line.Trim().StartsWith("Item Class: "), String.Empty)
+                ?.Substring("Item Class: ".Length).Trim();
+
+            List<string> augmentedStats = lines
+                .Where(line => line.Trim().EndsWith("(augmented)", StringComparison.OrdinalIgnoreCase)
+                            && !line.Trim().StartsWith("Quality:", StringComparison.OrdinalIgnoreCase))
+                .Select(line => line.Trim().Split(':')[0]) // Get the stat name before the colon
+                .ToList();
+
+            List<string> implicitStats = lines
+                .Where(line => line.Trim().EndsWith("(implicit)", StringComparison.OrdinalIgnoreCase))
+                .Select(line => line.Trim().Split(" (implicit)")[0]) // Get the stat name before the colon
+                .ToList();
+
+            var filteredItemType = items.Where(item => item.Type == itemType);
+
+            var noBaseType = filteredItemType.Where(item => item.BaseType == "");
+            var wBaseType = filteredItemType.Where(item => item.BaseType != "" && item.BaseType == lines[firstSeparatorLineIndex - 1]);
+
+            var filtersItemWBase = wBaseType != null && wBaseType.Any() ? wBaseType :
+                       noBaseType != null && noBaseType.Any() ? noBaseType :
+                       null;
+
+            if (filtersItemWBase != null && filtersItemWBase.Any())
             {
-                string line = lines[i].Trim();
+                var filtersItemWBaseWAugment = filtersItemWBase
+                    .Where(item => item.AugmentedStatsToMatch.Count == 0 ||
+                            item.AugmentedStatsToMatch.OrderBy(stat => stat).SequenceEqual(augmentedStats.OrderBy(stat => stat)));
 
-                // Check for item type
-                if (line.StartsWith("Item Class: "))
+                foreach (var item in filtersItemWBaseWAugment)
                 {
-                    itemType = line.Substring("Item Class: ".Length).Trim();
-                    i = lastSeparatorLineIndex;
-                    continue; // Move to last LineIndex of separator
-                }
-
-                // Use regex to find the modifier name
-                var modifierMatch = Regex.Match(line, @"Modifier\s*""([^""]+)""");
-
-                if (modifierMatch.Success && itemType != string.Empty)
-                {
-                    string modifierName = modifierMatch.Groups[1].Value;
-
-                    var item = items.Find(i => i.Type == itemType);
-
-                    if (item != null)
+                    List<string> interimMatchedLines = new List<string>();
+                    for (int i = lastSeparatorLineIndex + 1; i < lines.Length; i++)
                     {
-                        var stat = item.Stats.Find(s => s.Name == modifierName);
+                        string line = lines[i].Trim();
+                        var modifierMatch = Regex.Match(line, @"Modifier\s*""([^""]+)""");
 
-                        if (stat != null)
+                        if (modifierMatch.Success)
                         {
-                            var nextLineIndex = i + 1;
-                            if (nextLineIndex < lines.Length)
+                            string modifierName = modifierMatch.Groups[1].Value;
+                            var stat = item.Stats.Find(s => s.Name == modifierName);
+
+                            if (stat != null)
                             {
-                                matchedStrings.Add(lines[nextLineIndex].Trim());
+                                var nextLineIndex = i + 1;
+                                while (nextLineIndex < lines.Length && !lines[nextLineIndex].StartsWith('{'))
+                                {
+                                    if (nextLineIndex < lines.Length)
+                                    {
+                                        interimMatchedLines.Add(lines[nextLineIndex].Trim());
+                                        nextLineIndex++;
+                                    }
+                                }
                             }
                         }
+                    }
+                    
+                    if (interimMatchedLines.Count > 0)
+                    {
+                        matchedStrings.Add(item.Name + ":");
+                        matchedStrings.AddRange(interimMatchedLines);
                     }
                 }
             }
 
-            // Return the matched strings as a list
             return matchedStrings;
         }
     }

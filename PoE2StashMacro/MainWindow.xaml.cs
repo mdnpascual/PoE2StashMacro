@@ -49,6 +49,7 @@ namespace PoE2StashMacro
         private OverlayWindow overlayWindow;
 
         private Keys disengageKey = Keys.E;
+        private Keys startItemAffixKey = Keys.C;
 
         public MainWindow()
         {
@@ -104,8 +105,11 @@ namespace PoE2StashMacro
 
         private void StartDisengageReverse(string resolution, Point cursorPos)
         {
-            disengageReverseCancellationToken = new CancellationTokenSource();
-            disengageReverse = new DisengageReverse(resolution, mouseAutomation, disengageReverseCancellationToken.Token, screens[MonitorComboBox.SelectedIndex], disengageKey);
+            if (disengageReverse == null)
+            {
+                disengageReverseCancellationToken = new CancellationTokenSource();
+                disengageReverse = new DisengageReverse(resolution, mouseAutomation, disengageReverseCancellationToken.Token, screens[MonitorComboBox.SelectedIndex], disengageKey);
+            }            
 
             disengageReverseThread = new Thread(() =>
             {
@@ -170,9 +174,11 @@ namespace PoE2StashMacro
             {
                 keyboardHook.HookKeyboard(); // Start listening to global keyboard events
                 keyboardHook.AddKeyToSuppress(disengageKey);
+                keyboardHook.AddKeyToSuppress(startItemAffixKey);
             }
             else
             {
+                keyboardHook.RemoveKeyToSuppress(startItemAffixKey);
                 keyboardHook.RemoveKeyToSuppress(disengageKey);
                 keyboardHook.UnhookKeyboard(); // Stop listening to global keyboard events
             }
@@ -199,7 +205,7 @@ namespace PoE2StashMacro
 
         private void KeyboardHook_KeyUp(Keys key)
         {
-            if (key == disengageKey && !mouseAutomation.IsProgrammaticKeyPress())
+            if (key == disengageKey && DisengageSkill.IsChecked == true && !mouseAutomation.IsProgrammaticKeyPress())
             {
                 int selectedIndex = MonitorComboBox.SelectedIndex;
 
@@ -218,7 +224,7 @@ namespace PoE2StashMacro
                     new Point(relativeX, relativeY)
                 );
             }
-            if (key == Keys.E && DisengageSkill.IsChecked != true)
+            if (key == Keys.E && (IsQuadCheckBox.IsChecked == true || IsMapTab.IsChecked == true))
             {
                 if (MonitorComboBox.SelectedItem != null)
                 {

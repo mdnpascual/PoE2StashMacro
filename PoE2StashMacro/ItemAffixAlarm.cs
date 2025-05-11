@@ -6,6 +6,9 @@ using System.Windows.Media;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 
 namespace PoE2StashMacro
 {
@@ -18,6 +21,11 @@ namespace PoE2StashMacro
 
         [DllImport("user32.dll")]
         private static extern bool GetCursorPos(out POINT lpPoint);
+
+        [DllImport("user32.dll")]
+        private static extern short GetAsyncKeyState(int vKey);
+
+        private const int VK_LCONTROL = 0xA2;
 
         [StructLayout(LayoutKind.Sequential)]
         public struct POINT
@@ -97,8 +105,16 @@ namespace PoE2StashMacro
 
             string previousClipboardText = string.Empty;
 
+            List<double> executionTimes = new List<double>();
+            const int numExecutionsToCalc = 20;
+
             while (!cancellation.IsCancellationRequested)
             {
+                if (IsLeftCtrlPressed())
+                {
+                    mouseAutomation.Sleep(250);
+                    continue;
+                }
                 string currentClipboardText = string.Empty;
 
                 Application.Current.Dispatcher.Invoke(() =>
@@ -110,30 +126,43 @@ namespace PoE2StashMacro
                 {
                     previousClipboardText = currentClipboardText;
 
+                    Stopwatch stopwatch = new Stopwatch();
+                    stopwatch.Start();
                     var result = parser.ParseString(currentClipboardText);
-                    if (result.Count > 0)
+                    stopwatch.Stop();
+                    long executionTimeInTicks = stopwatch.ElapsedTicks;
+                    double executionTimeInMilliseconds = (double)executionTimeInTicks / Stopwatch.Frequency * 1000000;
+
+                    // Add the new execution time
+                    if (executionTimes.Count >= numExecutionsToCalc)
                     {
-                        Application.Current.Dispatcher.Invoke(() =>
+                        executionTimes.RemoveAt(0); // Remove the oldest entry
+                    }
+                    executionTimes.Add(executionTimeInMilliseconds); // Add the new execution time
+
+                    // Calculate the average execution time
+                    double averageExecutionTime = (double)executionTimes.Average();
+
+                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    {
+                        label.Content = String.Format("Average processing: {0:F2} µs", averageExecutionTime);
+
+                        if (result.Count > 0)
                         {
                             PlayAlertSound();
                             POINT cursorPos;
                             GetCursorPos(out cursorPos);
                             System.Windows.Point point = new System.Windows.Point(cursorPos.X / scalingFactor, cursorPos.Y / scalingFactor);
                             overlayWindow.ShowOverlay(string.Join("\n", result), point);
-                        });
-                    } else
-                    {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            label.Content = "";
-                        });
-                    }
-                    
+                        }
+
+                    });
+
                 }
 
                 mouseAutomation.PressKeyAsync(Keys.C, Keys.LControlKey, Keys.LMenu).Wait();
 
-                mouseAutomation.Sleep(100);
+                mouseAutomation.Sleep(250);
             }
         }
 
@@ -141,6 +170,11 @@ namespace PoE2StashMacro
         {
             mediaPlayer.Stop();
             mediaPlayer.Play();
+        }
+
+        private bool IsLeftCtrlPressed()
+        {
+            return (GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0; // Check if the high-order bit is set
         }
     }
 }

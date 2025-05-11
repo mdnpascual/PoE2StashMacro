@@ -6,9 +6,10 @@
         Background="Transparent" 
         WindowStyle="None" 
         Topmost="True"
-        IsHitTestVisible="False"
+        IsHitTestVisible="True"
         MinWidth="100" MinHeight="50"
-        MouseDown="OverlayWindow_MouseDown">
+        MouseDown="OverlayWindow_MouseDown"
+        MouseEnter="OverlayWindow_MouseEnter">
     <Border Background="#B3000000" CornerRadius="5" Padding="10">
         <TextBlock x:Name="OverlayText" Foreground="Yellow" FontSize="24" TextWrapping="Wrap"/>
     </Border>

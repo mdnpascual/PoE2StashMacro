@@ -65,6 +65,7 @@ namespace PoE2StashMacro
             this.SizeToContent = SizeToContent.WidthAndHeight;
             this.Show();
 
+            hideTimer.Stop();
             hideTimer.Start();
         }
 
@@ -77,6 +78,22 @@ namespace PoE2StashMacro
         private void OverlayWindow_MouseDown(object sender, MouseButtonEventArgs e)
         {
             HideOverlay();
+        }
+
+        private void OverlayWindow_MouseEnter(object sender, MouseEventArgs e)
+        {
+            // Get the current height of the overlay window
+            double currentHeight = this.ActualHeight;
+
+            // Calculate the new position to move the overlay up or down
+            if (Mouse.GetPosition(this).Y < currentHeight / 2) // If the mouse is in the upper half
+            {
+                this.Top += currentHeight; // Move down
+            }
+            else // If the mouse is in the lower half
+            {
+                this.Top -= currentHeight; // Move up
+            }
         }
     }
 }
