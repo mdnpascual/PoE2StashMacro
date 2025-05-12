@@ -16,6 +16,9 @@ using System.Windows.Controls;
 using CheckBox = System.Windows.Controls.CheckBox;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using Window = System.Windows.Window;
+using System.Runtime.InteropServices;
+using System.IO;
+using System.Reflection;
 
 namespace PoE2StashMacro
 {
@@ -38,7 +41,7 @@ namespace PoE2StashMacro
         private ItemAffixAlarm itemAffixAlarm;
         private Thread itemAffixAlarmThread;
         private CancellationTokenSource itemAffixAlarmCancellationToken;
-
+        
         private bool isListening = false;
         private KeyboardHook keyboardHook;
         private List<Screen> screens;
@@ -50,6 +53,11 @@ namespace PoE2StashMacro
 
         private Keys disengageKey = Keys.E;
         private Keys startItemAffixKey = Keys.C;
+
+        [DllImport("user32.dll")]
+        private static extern short GetAsyncKeyState(int vKey);
+
+        private const int VK_LCONTROL = 0xA2;
 
         public MainWindow()
         {
@@ -128,11 +136,12 @@ namespace PoE2StashMacro
             }
 
             itemAffixAlarmCancellationToken = new CancellationTokenSource();
-            itemAffixAlarm = new ItemAffixAlarm(overlayWindow, mouseAutomation, itemAffixAlarmCancellationToken.Token);
+            itemAffixAlarm = new ItemAffixAlarm(mouseAutomation, itemAffixAlarmCancellationToken.Token);
 
             itemAffixAlarmThread = new Thread(() =>
             {
-                itemAffixAlarm.Process(MousePosLbl);
+                MediaPlayer mediaPlayer = InitializeMediaPlayer();
+                itemAffixAlarm.Process(mediaPlayer, overlayWindow, MousePosLbl);
             });
 
             itemAffixAlarmThread.Start();
@@ -173,13 +182,18 @@ namespace PoE2StashMacro
             if (isListening)
             {
                 keyboardHook.HookKeyboard(); // Start listening to global keyboard events
-                keyboardHook.AddKeyToSuppress(disengageKey);
-                keyboardHook.AddKeyToSuppress(startItemAffixKey);
+                if (DisengageSkill.IsChecked == true)
+                {
+                    keyboardHook.AddKeyToSuppress(disengageKey);
+                }
+                if (AffixScanner.IsChecked == true)
+                {
+                    keyboardHook.AddKeyToSuppress(startItemAffixKey);
+                }
             }
             else
             {
-                keyboardHook.RemoveKeyToSuppress(startItemAffixKey);
-                keyboardHook.RemoveKeyToSuppress(disengageKey);
+                keyboardHook.ClearKeyToSuppress();
                 keyboardHook.UnhookKeyboard(); // Stop listening to global keyboard events
             }
         }
@@ -192,6 +206,17 @@ namespace PoE2StashMacro
             // If a checkbox is checked, uncheck all others
             if (checkedCheckBox != null && checkedCheckBox.IsChecked == true)
             {
+                if(checkedCheckBox.Name == "DisengageSkill")
+                {
+                    keyboardHook.ClearKeyToSuppress();
+                    keyboardHook.AddKeyToSuppress(disengageKey);
+                }
+                else if (checkedCheckBox.Name == "AffixScanner")
+                {
+                    keyboardHook.ClearKeyToSuppress();
+                    keyboardHook.AddKeyToSuppress(startItemAffixKey);
+                }
+
                 // Uncheck all other checkboxes
                 foreach (var child in ((StackPanel)checkedCheckBox.Parent).Children)
                 {
@@ -279,6 +304,53 @@ namespace PoE2StashMacro
                 IsQuadCheckBox.IsChecked = false;
                 IsMapTab.IsChecked = !IsMapTab.IsChecked;
             }
+
+            // SWITCHING
+            if (key == Keys.E && AffixScanner.IsChecked == true && !mouseAutomation.IsProgrammaticKeyPress() && IsLeftCtrlPressed())
+            {
+                // Switch to Disengage
+                // Uncheck all other checkboxes
+                foreach (var child in checkBoxPanel.Children)
+                {
+                    if (child is CheckBox checkBox)
+                    {
+                        if (checkBox.Name != "DisengageSkill")
+                        {
+                            checkBox.IsChecked = false;
+                        }
+                        else
+                        {
+                            checkBox.IsChecked = true;
+                        }
+                    } 
+                }
+
+                keyboardHook.ClearKeyToSuppress();
+                keyboardHook.AddKeyToSuppress(disengageKey);
+            }
+
+            if (key == Keys.C && DisengageSkill.IsChecked == true && !mouseAutomation.IsProgrammaticKeyPress() && IsLeftCtrlPressed())
+            {
+                // Switch to Affix Scanner
+                // Uncheck all other checkboxes
+                foreach (var child in checkBoxPanel.Children)
+                {
+                    if (child is CheckBox checkBox)
+                    {
+                        if (checkBox.Name != "AffixScanner")
+                        {
+                            checkBox.IsChecked = false;
+                        }
+                        else
+                        {
+                            checkBox.IsChecked = true;
+                        }
+                    }
+                }
+
+                keyboardHook.ClearKeyToSuppress();
+                keyboardHook.AddKeyToSuppress(startItemAffixKey);
+            }
         }
 
         private void CheckMousePositionInMonitor(Point mousePosition, Screen selectedScreen)
@@ -326,6 +398,50 @@ namespace PoE2StashMacro
             {
                 mouseAutomation = new MouseAutomation(screens[selectedItem]);
             }
+        }
+        private bool IsLeftCtrlPressed()
+        {
+            return (GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0; // Check if the high-order bit is set
+        }
+
+        private MediaPlayer InitializeMediaPlayer()
+        {
+            MediaPlayer mediaPlayer = new MediaPlayer();
+
+            // Get the current assembly
+            var assembly = Assembly.GetExecutingAssembly();
+
+            // Specify the resource name (update with your actual project namespace)
+            string resourceName = "PoE2StashMacro.noot.mp3";
+
+            using (Stream stream = assembly.GetManifestResourceStream(resourceName))
+            {
+                if (stream != null)
+                {
+                    // Create a temporary file
+                    string tempFilePath = Path.Combine(Path.GetTempPath(), "noot.mp3");
+
+                    // Check if the file already exists and delete it
+                    if (File.Exists(tempFilePath))
+                    {
+                        File.Delete(tempFilePath);
+                    }
+
+                    using (FileStream fileStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write))
+                    {
+                        stream.CopyTo(fileStream); // Copy the stream to the temporary file
+                    }
+
+                    // Open the temporary file in the MediaPlayer
+                    mediaPlayer.Open(new Uri(tempFilePath, UriKind.Absolute));
+                }
+                else
+                {
+                    MessageBox.Show("Sound file not found.");
+                }
+            }
+
+            return mediaPlayer;
         }
     }
 }

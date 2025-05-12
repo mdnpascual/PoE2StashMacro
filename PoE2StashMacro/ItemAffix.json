@@ -9441,7 +9441,7 @@
                 "description": "35% reduced Attribute Requirements",
                 "tier": 5,
                 "rank": 1,
-                "enabled": true
+                "enabled": false
             },
             {
                 "name": "Glinting",
@@ -13422,7 +13422,7 @@
                 "description": "35% reduced Attribute Requirements",
                 "tier": 5,
                 "rank": 1,
-                "enabled": true
+                "enabled": false
             },
             {
                 "name": "of Thick Skin",
@@ -14314,7 +14314,7 @@
                 "description": "35% reduced Attribute Requirements",
                 "tier": 5,
                 "rank": 1,
-                "enabled": true
+                "enabled": false
             },
             {
                 "name": "of Thick Skin",
@@ -21858,7 +21858,7 @@
                 "description": "35% reduced Attribute Requirements",
                 "tier": 5,
                 "rank": 1,
-                "enabled": true
+                "enabled": false
             },
             {
                 "name": "of Thick Skin",

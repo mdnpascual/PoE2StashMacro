@@ -3,8 +3,6 @@ using System.Threading;
 using System.Windows.Forms;
 using Application = System.Windows.Application;
 using System.Windows.Media;
-using System.IO;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -18,6 +16,29 @@ namespace PoE2StashMacro
         private CancellationToken cancellation;
         private MediaPlayer mediaPlayer;
         private OverlayWindow overlayWindow;
+
+        [DllImport("user32.dll")]
+        private static extern bool OpenClipboard(IntPtr hWndNewOwner);
+
+        [DllImport("user32.dll")]
+        private static extern bool CloseClipboard();
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetClipboardData(uint uFormat);
+
+        [DllImport("user32.dll")]
+        private static extern bool EmptyClipboard();
+
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr GlobalLock(IntPtr hMem);
+
+        [DllImport("kernel32.dll")]
+        private static extern void GlobalUnlock(IntPtr hMem);
+
+        [DllImport("kernel32.dll")]
+        private static extern int GlobalSize(IntPtr hMem);
+
+        private const uint CF_TEXT = 1; // Clipboard format for text
 
         [DllImport("user32.dll")]
         private static extern bool GetCursorPos(out POINT lpPoint);
@@ -36,12 +57,10 @@ namespace PoE2StashMacro
 
         public float scalingFactor;
 
-        public ItemAffixAlarm(OverlayWindow overlayWindow, MouseAutomation mouseAutomation, CancellationToken cancellationToken)
+        public ItemAffixAlarm(MouseAutomation mouseAutomation, CancellationToken cancellationToken)
         {
-            this.overlayWindow = overlayWindow;
             this.mouseAutomation = mouseAutomation;
             this.cancellation = cancellationToken;
-            InitializeMediaPlayer();
             this.scalingFactor = GetDpiScalingFactor();
         }
 
@@ -56,52 +75,13 @@ namespace PoE2StashMacro
             return 1.0f; // Default scaling factor
         }
 
-        private void InitializeMediaPlayer()
+        public void Process(MediaPlayer mediaPlayer, OverlayWindow overlayWindow, System.Windows.Controls.Label label)
         {
-            mediaPlayer = new MediaPlayer();
-
-            // Get the current assembly
-            var assembly = Assembly.GetExecutingAssembly();
-
-            // Specify the resource name (update with your actual project namespace)
-            string resourceName = "PoE2StashMacro.noot.mp3"; 
-
-            using (Stream stream = assembly.GetManifestResourceStream(resourceName))
-            {
-                if (stream != null)
-                {
-                    // Create a temporary file
-                    string tempFilePath = Path.Combine(Path.GetTempPath(), "noot.mp3");
-
-                    // Check if the file already exists and delete it
-                    if (File.Exists(tempFilePath))
-                    {
-                        File.Delete(tempFilePath);
-                    }
-
-                    using (FileStream fileStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write))
-                    {
-                        stream.CopyTo(fileStream); // Copy the stream to the temporary file
-                    }
-
-                    // Open the temporary file in the MediaPlayer
-                    mediaPlayer.Open(new Uri(tempFilePath, UriKind.Absolute));
-                }
-                else
-                {
-                    MessageBox.Show("Sound file not found.");
-                }
-            }
-        }
-
-        public void Process(System.Windows.Controls.Label label)
-        {
+            this.mediaPlayer = mediaPlayer;
+            this.overlayWindow = overlayWindow;
             ItemAffixParser parser = new ItemAffixParser();
             Console.Write(parser.items);
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                Clipboard.Clear();
-            });
+            ClearClipboard();
 
             string previousClipboardText = string.Empty;
 
@@ -117,10 +97,7 @@ namespace PoE2StashMacro
                 }
                 string currentClipboardText = string.Empty;
 
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    currentClipboardText = Clipboard.GetText();
-                });
+                currentClipboardText = GetClipboardText();
 
                 if (currentClipboardText != previousClipboardText)
                 {
@@ -143,19 +120,21 @@ namespace PoE2StashMacro
                     // Calculate the average execution time
                     double averageExecutionTime = (double)executionTimes.Average();
 
+                    if (result.Count > 0)
+                    {
+                        PlayAlertSound();
+                        POINT cursorPos;
+                        GetCursorPos(out cursorPos);
+                        System.Windows.Point point = new System.Windows.Point(cursorPos.X / scalingFactor, cursorPos.Y / scalingFactor);
+                        Application.Current.Dispatcher.BeginInvoke(() =>
+                        {
+                            this.overlayWindow.ShowOverlay(string.Join("\n", result), point);
+                        }, System.Windows.Threading.DispatcherPriority.Send);
+                    }
+
                     Application.Current.Dispatcher.BeginInvoke(() =>
                     {
                         label.Content = String.Format("Average processing: {0:F2} µs", averageExecutionTime);
-
-                        if (result.Count > 0)
-                        {
-                            PlayAlertSound();
-                            POINT cursorPos;
-                            GetCursorPos(out cursorPos);
-                            System.Windows.Point point = new System.Windows.Point(cursorPos.X / scalingFactor, cursorPos.Y / scalingFactor);
-                            overlayWindow.ShowOverlay(string.Join("\n", result), point);
-                        }
-
                     });
 
                 }
@@ -175,6 +154,42 @@ namespace PoE2StashMacro
         private bool IsLeftCtrlPressed()
         {
             return (GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0; // Check if the high-order bit is set
+        }
+
+        public static string GetClipboardText()
+        {
+            string result = string.Empty;
+
+            if (OpenClipboard(IntPtr.Zero))
+            {
+                IntPtr hClipboardData = GetClipboardData(CF_TEXT);
+                if (hClipboardData != IntPtr.Zero)
+                {
+                    IntPtr pData = GlobalLock(hClipboardData);
+                    if (pData != IntPtr.Zero)
+                    {
+                        int size = GlobalSize(hClipboardData);
+                        byte[] buffer = new byte[size];
+                        Marshal.Copy(pData, buffer, 0, size);
+                        GlobalUnlock(hClipboardData);
+
+                        // Convert the byte array to a string
+                        result = System.Text.Encoding.ASCII.GetString(buffer);
+                    }
+                }
+                CloseClipboard();
+            }
+
+            return result;
+        }
+
+        public static void ClearClipboard()
+        {
+            if (OpenClipboard(IntPtr.Zero))
+            {
+                EmptyClipboard();
+                CloseClipboard();
+            }
         }
     }
 }

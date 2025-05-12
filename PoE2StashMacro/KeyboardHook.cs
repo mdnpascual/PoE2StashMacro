@@ -40,6 +40,10 @@ public class KeyboardHook
     {
         _keysToSuppress.Remove(key);
     }
+    public void ClearKeyToSuppress()
+    {
+        _keysToSuppress.Clear();
+    }
 
     private IntPtr SetHook(LowLevelKeyboardProc proc)
     {

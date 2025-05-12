@@ -137,6 +137,7 @@ namespace PoE2StashMacro
 
         public async Task MoveMouseAndPressKeyAsync(Point oppositeCursorPos, Point origPos, Keys key)
         {
+            isProgrammaticKeyPress = true;
             bool running = true;
             // Start a task to continuously move the mouse to the opposite position
             var moveTask = Task.Run(async () =>
@@ -150,13 +151,10 @@ namespace PoE2StashMacro
 
             await Task.Delay(16);
 
-            isProgrammaticKeyPress = true;
             keybd_event((byte)key, 0, 0, UIntPtr.Zero);
-
             await Task.Delay(16);
 
             keybd_event((byte)key, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
-
             await Task.Delay(66);
 
             // Stop the mouse movement task

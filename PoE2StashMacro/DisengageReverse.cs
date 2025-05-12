@@ -39,7 +39,7 @@ namespace PoE2StashMacro
 
             mouseAutomation.MoveMouseAndPressKeyAsync(oppositeCursorPos, cursorPos, this.disengageKey);
 
-            Application.Current.Dispatcher.Invoke(() => {
+            Application.Current.Dispatcher.BeginInvoke(() => {
                 label.Content = $"X: {cursorPos.X} Y: {cursorPos.Y}\nOpposite X: {oppositeCursorPos.X} Y: {oppositeCursorPos.Y}";
             });
         }
