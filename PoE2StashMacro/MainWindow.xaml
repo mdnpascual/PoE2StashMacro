@@ -26,7 +26,7 @@
         <Label Content="E: Execute Map/Disengage" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,184,0,0"/>
         <Label Content="C: Turn on Item Tier Scanner" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,204,0,0"/>
         <Label Content="Left Ctrl: Pause Scanner" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,224,0,0"/>
-        <Label Content="Ctrl + E: Switch to Disengage (when on Affix tier)" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,244,0,0"/>
-        <Label Content="Ctrl + C: Switch to Affix Tier (when on Disengage)" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,264,0,0"/>
+        <Label Content="Ctrl + E: Toggle Disengage status" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,244,0,0"/>
+        <Label Content="Ctrl + C: Toggle Affix Tier Status" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,264,0,0"/>
     </Grid>
 </Window>

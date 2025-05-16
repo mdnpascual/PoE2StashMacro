@@ -272,7 +272,7 @@ namespace PoE2StashMacro
                         new Point(relativeX, relativeY));
                 }   
             }
-            if (key == Keys.C && AffixScanner.IsChecked == true && !mouseAutomation.IsProgrammaticKeyPress())
+            if (key == Keys.C && AffixScanner.IsChecked == true && !mouseAutomation.IsProgrammaticKeyPress() && !IsLeftCtrlPressed())
             {
                 StartItemAffixAlarm();
             }
@@ -305,10 +305,12 @@ namespace PoE2StashMacro
                 IsMapTab.IsChecked = !IsMapTab.IsChecked;
             }
 
-            // SWITCHING
-            if (key == Keys.E && AffixScanner.IsChecked == true && !mouseAutomation.IsProgrammaticKeyPress() && IsLeftCtrlPressed())
+            if (key == Keys.E 
+                && !((IsQuadCheckBox.IsChecked ?? false) || (IsMapTab.IsChecked ?? false)) 
+                && !mouseAutomation.IsProgrammaticKeyPress() 
+                && IsLeftCtrlPressed())
             {
-                // Switch to Disengage
+                ///// Switch to Affix Scanner
                 // Uncheck all other checkboxes
                 foreach (var child in checkBoxPanel.Children)
                 {
@@ -320,16 +322,27 @@ namespace PoE2StashMacro
                         }
                         else
                         {
-                            checkBox.IsChecked = true;
+                            checkBox.IsChecked = !DisengageSkill.IsChecked ?? false;
                         }
-                    } 
+                    }
                 }
 
                 keyboardHook.ClearKeyToSuppress();
-                keyboardHook.AddKeyToSuppress(disengageKey);
+                // Add Key to Supress
+                if (DisengageSkill.IsChecked == true)
+                {
+                    keyboardHook.AddKeyToSuppress(disengageKey);
+                }
+                else
+                {
+                    if (disengageReverseThread != null && disengageReverseThread.IsAlive)
+                    {
+                        disengageReverseCancellationToken.Cancel();
+                    }
+                }
             }
 
-            if (key == Keys.C && DisengageSkill.IsChecked == true && !mouseAutomation.IsProgrammaticKeyPress() && IsLeftCtrlPressed())
+            if (key == Keys.C && !mouseAutomation.IsProgrammaticKeyPress() && IsLeftCtrlPressed())
             {
                 // Switch to Affix Scanner
                 // Uncheck all other checkboxes
@@ -343,13 +356,23 @@ namespace PoE2StashMacro
                         }
                         else
                         {
-                            checkBox.IsChecked = true;
+                            checkBox.IsChecked = !AffixScanner.IsChecked ?? false;
                         }
                     }
                 }
 
                 keyboardHook.ClearKeyToSuppress();
-                keyboardHook.AddKeyToSuppress(startItemAffixKey);
+                // Add Key to Supress
+                if (AffixScanner.IsChecked == true)
+                {
+                    keyboardHook.AddKeyToSuppress(startItemAffixKey);
+                } else
+                {
+                    if (itemAffixAlarmThread != null && itemAffixAlarmThread.IsAlive)
+                    {
+                        itemAffixAlarmCancellationToken.Cancel();
+                    }
+                }
             }
         }
 

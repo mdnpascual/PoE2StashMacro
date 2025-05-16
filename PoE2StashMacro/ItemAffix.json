@@ -15523,7 +15523,7 @@
         "implicitStatsToMatch": [],
         "augmentedStatsToMatch": [
             "Armour",
-            "Evasion Rating"
+            "Energy Shield"
         ],
         "enabled": true
     },
