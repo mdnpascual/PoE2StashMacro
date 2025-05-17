@@ -12,18 +12,18 @@ namespace PoE2StashMacro
 {
     internal class DisengageReverse
     {
-        private MouseAutomation mouseAutomation;
+        private InputAutomation inputAutomation;
         private CancellationToken cancellationToken;
         private Screen screen;
         private string resolution { get; set; }
         private Point centerPoint = new Point(1950, 975);
         private Keys disengageKey;
 
-        public DisengageReverse(string resolution, MouseAutomation mouseAutomation, CancellationToken cancellationToken, Screen screen, Keys disengageKey)
+        public DisengageReverse(string resolution, InputAutomation inputAutomation, CancellationToken cancellationToken, Screen screen, Keys disengageKey)
         {
             this.resolution = resolution;
             this.screen = screen;
-            this.mouseAutomation = mouseAutomation;
+            this.inputAutomation = inputAutomation;
             this.cancellationToken = cancellationToken;
             this.disengageKey = disengageKey;
 
@@ -37,7 +37,7 @@ namespace PoE2StashMacro
         {
             Point oppositeCursorPos = GetOppositeCursorPosition(cursorPos, centerPoint);
 
-            mouseAutomation.MoveMouseAndPressKeyAsync(oppositeCursorPos, cursorPos, this.disengageKey);
+            inputAutomation.ReverseDisengageAction(oppositeCursorPos, cursorPos, this.disengageKey);
 
             Application.Current.Dispatcher.BeginInvoke(() => {
                 label.Content = $"X: {cursorPos.X} Y: {cursorPos.Y}\nOpposite X: {oppositeCursorPos.X} Y: {oppositeCursorPos.Y}";

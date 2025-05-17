@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Application = System.Windows.Application;
 using System.Windows.Media;
@@ -12,7 +13,7 @@ namespace PoE2StashMacro
 {
     internal class ItemAffixAlarm
     {
-        private MouseAutomation mouseAutomation;
+        private InputAutomation inputAutomation;
         private CancellationToken cancellation;
         private MediaPlayer mediaPlayer;
         private OverlayWindow overlayWindow;
@@ -57,9 +58,9 @@ namespace PoE2StashMacro
 
         public float scalingFactor;
 
-        public ItemAffixAlarm(MouseAutomation mouseAutomation, CancellationToken cancellationToken)
+        public ItemAffixAlarm(InputAutomation inputAutomation, CancellationToken cancellationToken)
         {
-            this.mouseAutomation = mouseAutomation;
+            this.inputAutomation = inputAutomation;
             this.cancellation = cancellationToken;
             this.scalingFactor = GetDpiScalingFactor();
         }
@@ -92,7 +93,7 @@ namespace PoE2StashMacro
             {
                 if (IsLeftCtrlPressed())
                 {
-                    mouseAutomation.Sleep(250);
+                    Task.Delay(100).Wait();
                     continue;
                 }
                 string currentClipboardText = string.Empty;
@@ -139,9 +140,9 @@ namespace PoE2StashMacro
 
                 }
 
-                mouseAutomation.PressKeyAsync(Keys.C, Keys.LControlKey, Keys.LMenu).Wait();
+                inputAutomation.LeftAltCopy();
 
-                mouseAutomation.Sleep(250);
+                Task.Delay(250).Wait();
             }
         }
 

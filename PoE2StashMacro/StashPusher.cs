@@ -19,7 +19,7 @@ namespace PoE2StashMacro
         public Point startingPos { get; private set; }
         public Rectangle stashBounds { get; private set; }
 
-        private MouseAutomation mouseAutomation;
+        private InputAutomation inputAutomation;
         private CancellationToken cancellationToken;
         private Screen screen;
         private int yCount { get; set; }
@@ -62,10 +62,10 @@ namespace PoE2StashMacro
             { "1920x1080", new Point[] { new Point(0, 0), new Point(0, 0) } }
         };
 
-        public StashPusher(string resolution, bool isQuad, bool isMapTab, MouseAutomation mouseAutomation, CancellationToken cancellationToken, Screen screen)
+        public StashPusher(string resolution, bool isQuad, bool isMapTab, InputAutomation inputAutomation, CancellationToken cancellationToken, Screen screen)
         {
             this.screen = screen;
-            this.mouseAutomation = mouseAutomation;
+            this.inputAutomation = inputAutomation;
             this.cancellationToken = cancellationToken;
             SetValues(resolution, isQuad, isMapTab);
         }
@@ -147,13 +147,13 @@ namespace PoE2StashMacro
                     {
                         break;
                     }
-                    mouseAutomation.Sleep(100);
+                    inputAutomation.Sleep(100);
                     shouldBreak = ClickBoxAtIndex(boxIndex, label);
                     boxIndex++;
                 }
                 if (shouldBreak) // Final click if it detected
                 {
-                    mouseAutomation.Sleep(100);
+                    inputAutomation.Sleep(100);
                     shouldBreak = ClickBoxAtIndex(boxIndex, label);
                 }
             }
@@ -161,12 +161,10 @@ namespace PoE2StashMacro
 
         private bool ClickBoxAtIndex(int boxIndex, System.Windows.Controls.Label label)
         {
-            Point position = ComputeBoxPosition(boxIndex);   
+            Point position = ComputeBoxPosition(boxIndex);
 
             // Move the mouse to the computed center point
-            mouseAutomation.MouseMove(position.X, position.Y);
-            mouseAutomation.Sleep(100);
-            mouseAutomation.MouseLeftClick();
+            inputAutomation.ClickAtPos(position);
 
             MoveMouseAwayCheck(boxIndex);
             Point nextPos = ComputeBoxPosition(boxIndex + 1);
@@ -187,8 +185,7 @@ namespace PoE2StashMacro
         {
             if (this.isMapTab && ((boxIndex + 1) % this.yCount) == 0)
             {
-                mouseAutomation.MouseMove(0, 0);
-                mouseAutomation.Sleep(35);
+                inputAutomation.MouseMove(new Point(0,0), 35);
             }
         }
 

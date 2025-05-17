@@ -13,12 +13,12 @@ public class KeyboardHook
     public event Action<Keys> KeyUp;
     public event Action<Keys> KeyDown;
 
-    private MouseAutomation mouseAutomation;
+    private InputAutomation inputAutomation;
     private HashSet<Keys> _keysToSuppress = new HashSet<Keys>();
 
-    public KeyboardHook(MouseAutomation mouseAutomation)
+    public KeyboardHook(InputAutomation inputAutomation)
     {
-        this.mouseAutomation = mouseAutomation;
+        this.inputAutomation = inputAutomation;
         _proc = HookCallback;
     }
 
@@ -65,7 +65,7 @@ public class KeyboardHook
             {
                 KeyDown?.Invoke(key);
                 // Suppress the key if it's in the suppression list
-                if (_keysToSuppress.Contains(key) && !mouseAutomation.IsProgrammaticKeyPress())
+                if (_keysToSuppress.Contains(key) && !inputAutomation.IsProgrammaticKeyPress())
                 {
                     return 1; // Suppress the key event
                 }

@@ -48,7 +48,7 @@ namespace PoE2StashMacro
         private DispatcherTimer timer;
         private Brush originalBackground;
 
-        private MouseAutomation mouseAutomation;
+        private InputAutomation inputAutomation;
         private OverlayWindow overlayWindow;
 
         private Keys disengageKey = Keys.E;
@@ -84,8 +84,8 @@ namespace PoE2StashMacro
                 MonitorComboBox.SelectedIndex = appSettings.SelectedMonitorIndex >= 0 ? appSettings.SelectedMonitorIndex : 0;
             }
 
-            mouseAutomation = new MouseAutomation(screens[MonitorComboBox.SelectedIndex]);
-            keyboardHook = new KeyboardHook(mouseAutomation);
+            inputAutomation = new InputAutomation(screens[MonitorComboBox.SelectedIndex]);
+            keyboardHook = new KeyboardHook(inputAutomation);
             keyboardHook.KeyUp += KeyboardHook_KeyUp;
 
             // Set the checkbox state
@@ -101,7 +101,7 @@ namespace PoE2StashMacro
         private void StartStashPusher(string resolution, bool isQuad, bool isMapTab, Point cursorPos)
         {
             stashPusherCancellationToken = new CancellationTokenSource();
-            stashPusher = new StashPusher(resolution, isQuad, isMapTab, mouseAutomation, stashPusherCancellationToken.Token, screens[MonitorComboBox.SelectedIndex]);
+            stashPusher = new StashPusher(resolution, isQuad, isMapTab, inputAutomation, stashPusherCancellationToken.Token, screens[MonitorComboBox.SelectedIndex]);
 
             stashPusherThread = new Thread(() =>
             {
@@ -116,7 +116,7 @@ namespace PoE2StashMacro
             if (disengageReverse == null)
             {
                 disengageReverseCancellationToken = new CancellationTokenSource();
-                disengageReverse = new DisengageReverse(resolution, mouseAutomation, disengageReverseCancellationToken.Token, screens[MonitorComboBox.SelectedIndex], disengageKey);
+                disengageReverse = new DisengageReverse(resolution, inputAutomation, disengageReverseCancellationToken.Token, screens[MonitorComboBox.SelectedIndex], disengageKey);
             }            
 
             disengageReverseThread = new Thread(() =>
@@ -136,7 +136,7 @@ namespace PoE2StashMacro
             }
 
             itemAffixAlarmCancellationToken = new CancellationTokenSource();
-            itemAffixAlarm = new ItemAffixAlarm(mouseAutomation, itemAffixAlarmCancellationToken.Token);
+            itemAffixAlarm = new ItemAffixAlarm(inputAutomation, itemAffixAlarmCancellationToken.Token);
 
             itemAffixAlarmThread = new Thread(() =>
             {
@@ -230,7 +230,7 @@ namespace PoE2StashMacro
 
         private void KeyboardHook_KeyUp(Keys key)
         {
-            if (key == disengageKey && DisengageSkill.IsChecked == true && !mouseAutomation.IsProgrammaticKeyPress())
+            if (key == disengageKey && DisengageSkill.IsChecked == true && !inputAutomation.IsProgrammaticKeyPress())
             {
                 int selectedIndex = MonitorComboBox.SelectedIndex;
 
@@ -272,7 +272,7 @@ namespace PoE2StashMacro
                         new Point(relativeX, relativeY));
                 }   
             }
-            if (key == Keys.C && AffixScanner.IsChecked == true && !mouseAutomation.IsProgrammaticKeyPress() && !IsLeftCtrlPressed())
+            if (key == Keys.C && AffixScanner.IsChecked == true && !inputAutomation.IsProgrammaticKeyPress() && !IsLeftCtrlPressed())
             {
                 StartItemAffixAlarm();
             }
@@ -291,7 +291,7 @@ namespace PoE2StashMacro
                     itemAffixAlarmCancellationToken.Cancel();
                 }
             }
-            else if (key == Keys.Q && DisengageSkill.IsChecked != true && !mouseAutomation.IsProgrammaticKeyPress())
+            else if (key == Keys.Q && DisengageSkill.IsChecked != true && !inputAutomation.IsProgrammaticKeyPress())
             {
                 if (DisengageSkill.IsChecked == true)
                 {
@@ -299,7 +299,7 @@ namespace PoE2StashMacro
                     IsMapTab.IsChecked = false;
                 }
             }
-            else if (key == Keys.M && DisengageSkill.IsChecked != true && !mouseAutomation.IsProgrammaticKeyPress())
+            else if (key == Keys.M && DisengageSkill.IsChecked != true && !inputAutomation.IsProgrammaticKeyPress())
             {
                 IsQuadCheckBox.IsChecked = false;
                 IsMapTab.IsChecked = !IsMapTab.IsChecked;
@@ -307,7 +307,7 @@ namespace PoE2StashMacro
 
             if (key == Keys.E 
                 && !((IsQuadCheckBox.IsChecked ?? false) || (IsMapTab.IsChecked ?? false)) 
-                && !mouseAutomation.IsProgrammaticKeyPress() 
+                && !inputAutomation.IsProgrammaticKeyPress() 
                 && IsLeftCtrlPressed())
             {
                 ///// Switch to Affix Scanner
@@ -342,7 +342,7 @@ namespace PoE2StashMacro
                 }
             }
 
-            if (key == Keys.C && !mouseAutomation.IsProgrammaticKeyPress() && IsLeftCtrlPressed())
+            if (key == Keys.C && !inputAutomation.IsProgrammaticKeyPress() && IsLeftCtrlPressed())
             {
                 // Switch to Affix Scanner
                 // Uncheck all other checkboxes
@@ -419,7 +419,7 @@ namespace PoE2StashMacro
             // Perform an action based on the selected item
             if (selectedItem > -1)
             {
-                mouseAutomation = new MouseAutomation(screens[selectedItem]);
+                inputAutomation = new InputAutomation(screens[selectedItem]);
             }
         }
         private bool IsLeftCtrlPressed()
