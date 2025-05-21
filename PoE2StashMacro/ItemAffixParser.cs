@@ -117,7 +117,10 @@ namespace PoE2StashMacro
                 .ToList();
 
             int firstSeparatorLineIndex = separatorLineIndex.FirstOrDefault();
-            int lastSeparatorLineIndex = separatorLineIndex.LastOrDefault();
+
+            int modifierStartIndex = lines
+                .Select((line, index) => new { line, index })
+                .FirstOrDefault(x => x.line.Contains("{ "))?.index ?? lines.Length;
 
             string? itemType = lines
                 .FirstOrDefault(line => line.Trim().StartsWith("Item Class: "), String.Empty)
@@ -152,7 +155,7 @@ namespace PoE2StashMacro
                 foreach (var item in filtersItemWBaseWAugment)
                 {
                     List<string> interimMatchedLines = new List<string>();
-                    for (int i = lastSeparatorLineIndex + 1; i < lines.Length; i++)
+                    for (int i = modifierStartIndex + 1; i < lines.Length; i++)
                     {
                         string line = lines[i].Trim();
                         var modifierMatch = Regex.Match(line, @"Modifier\s*""([^""]+)""");
